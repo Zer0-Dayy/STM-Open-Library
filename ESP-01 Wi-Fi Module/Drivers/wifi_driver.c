@@ -1,0 +1,108 @@
+#include "wifi_driver.h"
+#include <string.h>
+#include <stdio.h>
+
+
+static UART_HandleTypeDef *wifi_uart;
+static uint8_t wifi_rx_buffer[WIFI_RX_BUF_LEN]; //DECLARING THE BUFFER TO READ DATA
+volatile uint8_t wifi_rx_ready = 0; //RX STATE (TO ENSURE THE RX IS NOT BUSY READING DATA)
+volatile uint16_t wifi_rx_size =0; //ACTUAL SIZE OF DATA BEING SENT FROM THE MODULE TO THE STM
+volatile uint8_t wifi_tx_done = 1; //TX STATE (TO ENSURE THE TX IS NOT BUSY SENDING DATA)
+volatile uint8_t wifi_response_ready = 0;
+
+//THE INTERRUPT HANDLERS ARE WEAK FUNCTION BY DEFAULT, SO IT WOULD BE OPTIMAL TO REDEFINE THEM IN THE LIBRARY RATHER THAN THE MAIN PROGRAM.
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) //ONCE THE "HAL_UART_Transmit_IT()" FINISHED TRANSFERING BYTES, HAL DETECTS THE "TC" INTERRUPT AND CALLS THIS CALLBACK FUNCTION WHICH SETS "wifi_tx_done = 1" MEANING UART TX IS FREE.
+{
+    if (huart == wifi_uart)
+        wifi_tx_done = 1; //SWITCH VARIABLE IF DATA TRANSFERED WAS SENT TO WIFI MODULE
+}
+
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t size) //THE HAL INTERRUPT SERVICE ROUTINE SEES THE "IDLE" OR "BUFFER FULL" FLAG. IT CALLS THIS FUNCTION AND PASSES THE NUMBER OF BYTES RECEIVED. THIS FUNCTION NULL-TERMINATED THE STRING TO ENSURE SAFETY WHEN USING STRING FUNCTIONS.
+{
+    if (huart == wifi_uart)
+    {
+    	wifi_rx_size = size;
+        wifi_rx_buffer[size] = '\0';
+    	wifi_rx_ready = 1; //STM MODULE IS READY FOR RECEPTION AGAIN
+    	memset(wifi_rx_buffer, 0, WIFI_RX_BUF_LEN); //CLEAR MEMORY BEFORE RE-ARMING THE RECEPTION FOR SAFETY.
+        HAL_UARTEx_ReceiveToIdle_IT(wifi_uart,wifi_rx_buffer,WIFI_RX_BUF_LEN); //RECEPTION IS IMMEDIATELY ENABLED AGAIN AFTER SUCCESSFUL STRING PARSING.
+
+    }
+}
+
+//INITIALIZE WI-FI MODULE WITH BASIC FUNCTIONS.
+void WiFi_Init(UART_HandleTypeDef *huart){
+	wifi_uart = huart;
+	HAL_UARTEx_ReceiveToIdle_IT(wifi_uart,wifi_rx_buffer,WIFI_RX_BUF_LEN);//START TRANSFERING BYTES INTO THE BUFFER. WHEN THE UART LINE STAYS HIGH FOR ONE FRAME TIME, IDLE FLAG IS TRIGGERED AND IT AUTOMATICALLY CALLS FOR "HAL_UARTEx_RxEventCallback()"
+	HAL_Delay(1000);
+	//THIS PART CAN BE ENABLED FOR DEBUGGING
+	/*WiFi_Send_Command("AT\r\n","OK",1000);
+	WiFi_Send_Command("AT+CWMODE=1\r\n","OK",1000);
+	printf("Wi-Fi module ready in STA mode. \r\n");*/
+}
+
+//SEND AN AT-COMMAND TO THE ESP8266 MODULE TO BE EXECUTED
+wifi_status_t WiFi_Send_Command(char* Command, const char* expected, uint32_t timeout_ms)
+{
+	if(!wifi_tx_done){ //CHECK IF UART IS AVAILABLE TO RECEIVE COMMANDS
+		return WIFI_BUSY;
+	}
+    HAL_UART_Transmit_IT(wifi_uart, (uint8_t*)Command, (uint16_t)strlen(Command));//BASIC TRANSMITION FUNCTION THAT SEND THE COMMAND BIT BY BIT TO THE ESP8266 MODULE. TRIGGERS "TC" INTERRUPT WHEN COMPLETE.
+    uint32_t tickstart = HAL_GetTick(); //INITIALIZE A COUNTDOWN
+    while((HAL_GetTick() - tickstart) < timeout_ms){ //CHECK IF TIME SPENT WAITING FOR A RESPONSE IS LESS THAN USER DEFINED TIMEOUT
+    	if(wifi_rx_ready){ //CHECK IF STM IS READY TO RECEIVE DATA FROM WIFI MODULE
+    		if(strstr((char*)wifi_rx_buffer,expected)){ //CHECK IF THE DATA RECEIVED IS AS EXPECTED
+    		}
+    	}
+    	if(strstr((char*)wifi_rx_buffer,"ERROR")){ //CHECK IF THE MODULE THROWS AN ERROR
+    		return WIFI_ERROR;
+    	}
+    }
+    return WIFI_TIMEOUT; //RESPONSE TIMEOUT
+}
+
+//CONNECT DIRECTLY TO WIFI
+wifi_status_t WiFi_Connect(const char *ssid, const char *password)
+{
+    char cmd[128]; //INITIALIZE A STRING THAT HOLDS THE AT-COMMAND FOR THE MODULE
+    snprintf(cmd, sizeof(cmd), "AT+CWJAP=\"%s\",\"%s\"\r\n", ssid, password); //COPY THE COMMAND WITH APPROPRIATE SSID AND PASSWORD INTO THE "cmd" STRING
+    return WiFi_Send_Command(cmd, "WIFI GOT IP", 10000); //EXECUTE COMMAND WITH A TIMEOUT LIMIT OF 10 SECONDS (ENOUGH TIME FOR DHCP AND HANDSHAKE)
+}
+
+wifi_status_t WiFi_GetIP(char *out_buf, uint16_t buf_len){
+	WiFi_Send_Command("AT+CIFSR\r\n","OK",2000); //RETURN THE IP ADDRESS OF THE STATION
+	strncpy(out_buf,(char*)wifi_rx_buffer,buf_len); //COPY THE FULL TEXT INTO "out_buf"
+	while(strstr((char*)wifi_rx_buffer, "busy p")) { //IF WIFI MODULE IS BUSY, WAIT 200ms AND TRY AGAIN
+	    HAL_Delay(200);
+	    return WiFi_Send_Command("AT+CIFSR\r\n","OK",2000);
+	}
+	return WIFI_OK;
+}
+
+wifi_status_t WiFi_SendTCP(const char*ip, uint16_t port, char* message){
+	char cmd[128];
+	//Opening TCP Connection
+	snprintf(cmd,sizeof(cmd),"AT+CIPSTART=\"TCP\",\"%s\",%u\r\n",ip,port); //AT+CIPSTART OPENS A TCP SOCKET
+	wifi_status_t result = WiFi_Send_Command(cmd,"OK",5000); //TRY OPENING A TCP SOCKET
+	if(result != WIFI_OK && !strstr((char*)wifi_rx_buffer,"CONNECT")){ //IF CONNECTION CANNOT BE ESTABLISHED POSSIBLE RETURN THE RESULTING SIGNAL
+		return result;
+	}
+	//Allocate space in the ESP Module
+	snprintf(cmd,sizeof(cmd),"AT+CIPSEND=%u\r\n",(unsigned int)strlen(message));
+	result = WiFi_Send_Command(cmd,">",2000);
+	if(result != WIFI_OK){
+		return result;
+	}
+	//Send Actual Payload
+	result = WiFi_Send_Command(message,"SEND OK",5000);
+	if(result != WIFI_OK){
+		return result;
+	}
+	//Close connection
+	WiFi_Send_Command("AT+CIPCLOSE\r\n","OK",2000);
+	return WIFI_OK;
+
+}
+
+
