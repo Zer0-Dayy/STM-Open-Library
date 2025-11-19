@@ -15,6 +15,7 @@ The goal is to create a clean, accessible reference for embedded engineers and s
 | Module | Description |
 |---------|-------------|
 | ESP-01 Wi-Fi Module| Interrupt-driven ESP8266/ESP-01 Wi-Fi interface using HAL UART. |
+| HC-SR04 Ultrasonic Module| Description coming soon |
 
 
 
