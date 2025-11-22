@@ -24,7 +24,7 @@ typedef struct{
 	uint32_t trig_channel;
 	uint16_t t_rise;
 	uint16_t t_fall;
-}ultrasonic_Handle_t; //A untrasonic_handle stucture is required for each ultrasonic module.
+}ultrasonic_Handle_t; //A ultrasonic_handle stucture is required for each ultrasonic module.
 
 
 void Ultrasonic_Sensor_Init(ultrasonic_Handle_t* ultrasonic_sensor);//Initialize the ultrasonic sensor.
