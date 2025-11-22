@@ -1,6 +1,6 @@
 #include "ultrasonic_sensor_driver.h"
 
-static ultrasonic_Handle_t* sensor = NULL; P//ointer used by the callback (Initialized to NULL for safety).
+static ultrasonic_Handle_t* sensor = NULL; //Pointer used by the callback (Initialized to NULL for safety).
 
 void Ultrasonic_Sensor_Init(ultrasonic_Handle_t* ultrasonic_sensor) //User will declare parameters in the main.c and call this function to initialize the sensor.
 {
