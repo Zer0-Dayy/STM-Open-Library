@@ -15,9 +15,7 @@ The goal is to create a clean, accessible reference for embedded engineers and s
 | Module | Description |
 |---------|-------------|
 | ESP-01 Wi-Fi Module| Interrupt-driven ESP8266/ESP-01 Wi-Fi interface using HAL UART. |
-| HC-SR04 Ultrasonic Module| Timer-driven ultrasonic distance driver using hardware PWM for TRIG and input-capture interrupts for ECHO, with fully non-blocking measurement logic. |
-
-
+| HC-SR04 Ultrasonic Module| Hardware-timer-based distance driver with PWM trigger and input capture. |
 
 ---
 
