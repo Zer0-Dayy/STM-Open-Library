@@ -1,6 +1,6 @@
-# Ultrasonic Sensor Driver (HC-SR04 style) for STM32
+# Ultrasonic Sensors Driver (HC-SR04 and HY-SRF05) for STM32
 
-This library measures distance using an HC-SR04-compatible ultrasonic sensor on STM32 microcontrollers.
+This library measures distance using any HC-SR04/HY-SRF05-compatible ultrasonic sensor on STM32 microcontrollers.
 It relies on **two hardware timers**—one for generating the TRIG pulse and one for capturing the ECHO signal—so timing is
 handled in hardware, keeping the CPU free and improving measurement stability.
 
