@@ -4,6 +4,8 @@
 #include "main.h"
 #include <math.h>
 
+#define ULTRASONIC_MAX_SENSORS 4
+
 typedef enum{
 	ULTRASONIC_OK,
 	ULTRASONIC_BUSY,
