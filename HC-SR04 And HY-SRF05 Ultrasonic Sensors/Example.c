@@ -1,32 +1,42 @@
 #include "ultrasonic_sensor_driver.h"
 
+extern TIM_HandleTypeDef htim1;   //TRIG TIMER EXAMPLE
+extern TIM_HandleTypeDef htim2;   //ECHO TIMER EXAMPLE
+
 int main(void)
 {
     HAL_Init();
     SystemClock_Config();
+    MX_GPIO_Init();
+    MX_TIM1_Init(); 
+    MX_TIM2_Init(); 
 
-    MX_TIM1_Init(); // Example TRIG timer
-    MX_TIM2_Init(); // Example ECHO timer
+    right_sensor.htim_trig    = &htim1;
+    right_sensor.trig_channel = TIM_CHANNEL_1;
+    right_sensor.htim_echo    = &htim2;
+    right_sensor.echo_channel = TIM_CHANNEL_1;
+    Ultrasonic_Sensor_Init(&right_sensor);
 
-    ultrasonic_Handle_t sensor;
-    sensor.htim_trig = &htim1;
-    sensor.trig_channel = TIM_CHANNEL_1;
-    sensor.htim_echo = &htim2;
-    sensor.echo_channel = TIM_CHANNEL_1;
-
-    Ultrasonic_Sensor_Init(&sensor);
+    left_sensor.htim_trig    = &htim1;
+    left_sensor.trig_channel = TIM_CHANNEL_2;
+    left_sensor.htim_echo    = &htim2;
+    left_sensor.echo_channel = TIM_CHANNEL_2;
+    Ultrasonic_Sensor_Init(&left_sensor);
 
     while (1)
     {
-        if (Ultrasonic_Trigger(&sensor) == ULTRASONIC_OK)
-        {
-            HAL_Delay(60); // Wait between pings if needed
+        if (Ultrasonic_Trigger(&right_sensor) == ULTRASONIC_OK){
+            HAL_Delay(60);
+            if (Ultrasonic_IsReady(&right_sensor)){
+                float distance_right = Ultrasonic_GetDistance(&right_sensor);
+            }
         }
-
-        if (Ultrasonic_IsReady(&sensor))
-        {
-            float distance = Ultrasonic_GetDistance(&sensor);
-            printf("Distance: %.2f cm\n", distance);
+        if (Ultrasonic_Trigger(&left_sensor) == ULTRASONIC_OK){
+            HAL_Delay(60);
+            if (Ultrasonic_IsReady(&left_sensor)){
+                float distance_left = Ultrasonic_GetDistance(&left_sensor);
+            }
         }
+        
     }
 }
