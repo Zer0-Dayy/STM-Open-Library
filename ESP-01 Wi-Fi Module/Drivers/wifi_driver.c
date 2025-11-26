@@ -50,19 +50,26 @@ void WiFi_Init(UART_HandleTypeDef *huart){
 //SEND AN AT-COMMAND TO THE ESP8266 MODULE TO BE EXECUTED
 wifi_status_t WiFi_Send_Command(char* Command, const char* expected, uint32_t timeout_ms)
 {
-	if(!wifi_tx_done){ //CHECK IF UART IS AVAILABLE TO RECEIVE COMMANDS
-		return WIFI_BUSY;
-	}
+        if(!wifi_tx_done){ //CHECK IF UART IS AVAILABLE TO RECEIVE COMMANDS
+                return WIFI_BUSY;
+        }
+
+        wifi_tx_done = 0; //MARK UART AS BUSY UNTIL THE TRANSMISSION COMPLETE CALLBACK RUNS
+        wifi_rx_ready = 0; //CLEAR READY FLAG BEFORE WAITING FOR A NEW RESPONSE
+        memset(wifi_rx_shadow_buffer, 0, sizeof(wifi_rx_shadow_buffer));
+
     HAL_UART_Transmit_IT(wifi_uart, (uint8_t*)Command, (uint16_t)strlen(Command));//BASIC TRANSMITION FUNCTION THAT SEND THE COMMAND BIT BY BIT TO THE ESP8266 MODULE. TRIGGERS "TC" INTERRUPT WHEN COMPLETE.
     uint32_t tickstart = HAL_GetTick(); //INITIALIZE A COUNTDOWN
     while((HAL_GetTick() - tickstart) < timeout_ms){ //CHECK IF TIME SPENT WAITING FOR A RESPONSE IS LESS THAN USER DEFINED TIMEOUT
-    	if(wifi_rx_ready){ //CHECK IF STM IS READY TO RECEIVE DATA FROM WIFI MODULE
-    		if(strstr((char*)wifi_rx_shadow_buffer,expected)){ //CHECK IF THE DATA RECEIVED IS AS EXPECTED
-    		}
-    	}
-    	if(strstr((char*)wifi_rx_shadow_buffer,"ERROR")){ //CHECK IF THE MODULE THROWS AN ERROR
-    		return WIFI_ERROR;
-    	}
+        if(wifi_rx_ready){ //CHECK IF STM IS READY TO RECEIVE DATA FROM WIFI MODULE
+                if(strstr((char*)wifi_rx_shadow_buffer,expected)){ //CHECK IF THE DATA RECEIVED IS AS EXPECTED
+                        wifi_rx_ready = 0;
+                        return WIFI_OK;
+                }
+        }
+        if(strstr((char*)wifi_rx_shadow_buffer,"ERROR")){ //CHECK IF THE MODULE THROWS AN ERROR
+                return WIFI_ERROR;
+        }
     }
     return WIFI_TIMEOUT; //RESPONSE TIMEOUT
 }
