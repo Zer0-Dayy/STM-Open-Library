@@ -32,7 +32,7 @@ typedef struct{
 void Ultrasonic_Sensor_Init(ultrasonic_Handle_t* ultrasonic_sensor);//Initialize the ultrasonic sensor.
 ultrasonic_status_t Ultrasonic_Trigger(ultrasonic_Handle_t* ultrasonic_sensor);//Send a trigger signal to the ultrasonic TRIG.
 uint8_t Ultrasonic_IsReady(ultrasonic_Handle_t* ultrasonic_sensor);//Check if the board has successfully captured the duration during which the ECHO went HIGH.
-float Ultrasonic_GetDistance(ultrasonic_Handle_t* ultrasonic_sensor);//Returns measured distance in mm.
+float Ultrasonic_GetDistance(ultrasonic_Handle_t* ultrasonic_sensor);//Returns measured distance in cm.
 
 
 #endif
