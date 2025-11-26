@@ -2,7 +2,9 @@
 
 This library measures distance using any HC-SR04/HY-SRF05-compatible ultrasonic sensor on STM32 microcontrollers.
 It relies on **two hardware timers**—one for generating the TRIG pulse and one for capturing the ECHO signal—so timing is
-handled in hardware, keeping the CPU free and improving measurement stability.
+handled in hardware, keeping the CPU free and improving measurement stability. The callback walks through a small registry of
+sensors, so you can capture echoes for **multiple sensors** on the same timer instance or across different timers without
+duplicating code.
 
 ## How the driver works
 - **TRIG via PWM timer**: `Ultrasonic_Trigger()` resets the TRIG timer counter, arms the PWM output, and enables the timer
@@ -56,6 +58,62 @@ int main(void)
         {
             float distance = Ultrasonic_GetDistance(&sensor);
             printf("Distance: %.2f cm\n", distance);
+        }
+    }
+}
+```
+
+## Example: two sensors sharing timers
+```c
+#include "ultrasonic_sensor_driver.h"
+
+extern TIM_HandleTypeDef htim1; // TRIG timer
+extern TIM_HandleTypeDef htim2; // ECHO timer
+
+int main(void)
+{
+    HAL_Init();
+    SystemClock_Config();
+    MX_TIM1_Init();
+    MX_TIM2_Init();
+
+    ultrasonic_Handle_t right_sensor = {
+        .htim_trig = &htim1,
+        .trig_channel = TIM_CHANNEL_1,
+        .htim_echo = &htim2,
+        .echo_channel = TIM_CHANNEL_1,
+    };
+
+    ultrasonic_Handle_t left_sensor = {
+        .htim_trig = &htim1,
+        .trig_channel = TIM_CHANNEL_2,
+        .htim_echo = &htim2,
+        .echo_channel = TIM_CHANNEL_2,
+    };
+
+    Ultrasonic_Sensor_Init(&right_sensor);
+    Ultrasonic_Sensor_Init(&left_sensor);
+
+    while (1)
+    {
+        if (Ultrasonic_Trigger(&right_sensor) == ULTRASONIC_OK)
+        {
+            HAL_Delay(60);
+            if (Ultrasonic_IsReady(&right_sensor))
+            {
+                float distance_right = Ultrasonic_GetDistance(&right_sensor);
+                (void)distance_right;
+            }
+        }
+
+        if (Ultrasonic_Trigger(&left_sensor) == ULTRASONIC_OK)
+        {
+            HAL_Delay(60);
+            if (Ultrasonic_IsReady(&left_sensor))
+            {
+                float distance_left = Ultrasonic_GetDistance(&left_sensor);
+                (void)distance_left;
+            }
         }
     }
 }
