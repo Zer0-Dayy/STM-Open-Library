@@ -19,8 +19,10 @@ This library shows how to talk to an ESP-01/ESP8266 Wi-Fi module from the STM32F
 - Optional: The init routine sends `AT` and `AT+CWMODE=1` to confirm the module is alive and set STA mode.
 
 ## Minimal usage example
+See `Basic_Driver_Example.c` for the full context. The core flow is below:
+
 ```c
-#include "wifi_driver.h"
+#include "wifi_basic_driver.h"
 
 int main(void)
 {
@@ -37,6 +39,25 @@ int main(void)
 
     WiFi_SendTCP("192.168.1.105", 5000, "Hello from STM32!\r\n");
 }
+```
+
+## HTTP helper
+`HTTP_Extension_Example.c` shows how to pair the driver with the helper. If you prefer not to handle raw sockets, `wifi_http_support.h` exposes simple
+wrappers for GET, POST, PUT, and DELETE requests. Include it alongside `wifi_basic_driver.h` to build higher-level HTTP calls without changing the driver
+workflow shown above. A minimal pattern looks like:
+
+```c
+#include "wifi_http_support.h"
+
+wifi_http_header_t headers[] = {
+    {"Content-Type", "application/json"},
+    {NULL, NULL} // terminator
+};
+
+WiFi_HTTP_GET("192.168.1.200", 80, "/status", NULL, 5000, 3);
+WiFi_HTTP_POST("192.168.1.200", 80, "/items", headers, "{\"name\":\"demo\"}", 5000, 3);
+WiFi_HTTP_PUT("192.168.1.200", 80, "/items/1", headers, "{\"name\":\"updated\"}", 5000, 3);
+WiFi_HTTP_DELETE("192.168.1.200", 80, "/items/1", NULL, 5000, 3);
 ```
 
 ## Tips for beginners

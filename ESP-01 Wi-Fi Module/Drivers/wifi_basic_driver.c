@@ -46,13 +46,16 @@ void WiFi_Init(UART_HandleTypeDef *huart){
 }
 
 //SEND AN AT-COMMAND TO THE ESP8266 MODULE TO BE EXECUTED
-wifi_status_t WiFi_Send_Command(char* Command, const char* expected, uint32_t timeout_ms){
-	if(!wifi_tx_done){ //CHECK IF UART IS AVAILABLE TO RECEIVE COMMANDS
-		return WIFI_BUSY;
-	}
-	wifi_tx_done = 0; //MARK UART AS BUSY UNTIL THE TRANSMISSION COMPLETE CALLBACK RUNS
-	wifi_rx_ready = 0; //CLEAR READY FLAG BEFORE WAITING FOR A NEW RESPONSE
-	memset(wifi_rx_shadow_buffer, 0, sizeof(wifi_rx_shadow_buffer));
+wifi_status_t WiFi_Send_Command(const char* Command, const char* expected, uint32_t timeout_ms){
+        if(Command == NULL || expected == NULL){
+                return WIFI_ERROR;
+        }
+        if(!wifi_tx_done){ //CHECK IF UART IS AVAILABLE TO RECEIVE COMMANDS
+                return WIFI_BUSY;
+        }
+        wifi_tx_done = 0; //MARK UART AS BUSY UNTIL THE TRANSMISSION COMPLETE CALLBACK RUNS
+        wifi_rx_ready = 0; //CLEAR READY FLAG BEFORE WAITING FOR A NEW RESPONSE
+        memset(wifi_rx_shadow_buffer, 0, sizeof(wifi_rx_shadow_buffer));
     HAL_UART_Transmit_IT(wifi_uart, (uint8_t*)Command, (uint16_t)strlen(Command));//BASIC TRANSMITION FUNCTION THAT SEND THE COMMAND BIT BY BIT TO THE ESP8266 MODULE. TRIGGERS "TC" INTERRUPT WHEN COMPLETE.
     uint32_t tickstart = HAL_GetTick(); //INITIALIZE A COUNTDOWN
     while((HAL_GetTick() - tickstart) < timeout_ms){ //CHECK IF TIME SPENT WAITING FOR A RESPONSE IS LESS THAN USER DEFINED TIMEOUT
@@ -90,17 +93,30 @@ wifi_status_t WiFi_Connect(const char *ssid, const char *password){
 }
 
 wifi_status_t WiFi_GetIP(char *out_buf, uint16_t buf_len){
-	WiFi_Send_Command("AT+CIFSR\r\n","OK",2000); //RETURN THE IP ADDRESS OF THE STATION
-	strncpy(out_buf,(char*)wifi_rx_shadow_buffer,buf_len); //COPY THE FULL TEXT INTO "out_buf"
-	while(strstr((char*)wifi_rx_shadow_buffer, "busy p")) { //IF WIFI MODULE IS BUSY, WAIT 200ms AND TRY AGAIN
-	    HAL_Delay(200);
-	    return WiFi_Send_Command("AT+CIFSR\r\n","OK",2000);
-	}
-	return WIFI_OK;
+        if(out_buf == NULL || buf_len == 0){
+                return WIFI_ERROR;
+        }
+        wifi_status_t status = WiFi_Send_Command("AT+CIFSR\r\n","OK",2000); //RETURN THE IP ADDRESS OF THE STATION
+        if(status != WIFI_OK){
+                return status;
+        }
+        strncpy(out_buf,(char*)wifi_rx_shadow_buffer,buf_len); //COPY THE FULL TEXT INTO "out_buf"
+        while(strstr((char*)wifi_rx_shadow_buffer, "busy p")) { //IF WIFI MODULE IS BUSY, WAIT 200ms AND TRY AGAIN
+            HAL_Delay(200);
+            status = WiFi_Send_Command("AT+CIFSR\r\n","OK",2000);
+            if(status != WIFI_OK){
+                    return status;
+            }
+            strncpy(out_buf,(char*)wifi_rx_shadow_buffer,buf_len);
+        }
+        return WIFI_OK;
 }
 
-wifi_status_t WiFi_SendTCP(const char*ip, uint16_t port, char* message){
-	char cmd[128];
+wifi_status_t WiFi_SendTCP(const char*ip, uint16_t port, const char* message){
+        if(ip == NULL || message == NULL){
+                return WIFI_ERROR;
+        }
+        char cmd[128];
 	//Opening TCP Connection
 	snprintf(cmd,sizeof(cmd),"AT+CIPSTART=\"TCP\",\"%s\",%u\r\n",ip,port); //AT+CIPSTART OPENS A TCP SOCKET
 	wifi_status_t result = WiFi_Send_Command(cmd,"OK",5000); //TRY OPENING A TCP SOCKET
