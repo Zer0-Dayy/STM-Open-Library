@@ -6,33 +6,34 @@
 
 #define ULTRASONIC_MAX_SENSORS 4
 
-typedef enum{
-	ULTRASONIC_OK,
-	ULTRASONIC_BUSY,
-	ULTRASONIC_FAIL,
-}ultrasonic_status_t;
+typedef enum
+{
+    ULTRASONIC_OK,
+    ULTRASONIC_BUSY,
+    ULTRASONIC_FAIL,
+} ultrasonic_status_t;
 
-typedef enum{
-	WAITING_FOR_RISING,
-	WAITING_FOR_FALLING,
-}echo_status_t;
+typedef enum
+{
+    WAITING_FOR_RISING,
+    WAITING_FOR_FALLING,
+} echo_status_t;
 
-typedef struct{
-	echo_status_t echo_state;
-	uint8_t ultrasonic_ready ;
-	TIM_HandleTypeDef *htim_echo;
-	uint32_t echo_channel;
-	TIM_HandleTypeDef *htim_trig;
-	uint32_t trig_channel;
-	uint16_t t_rise;
-	uint16_t t_fall;
-}ultrasonic_Handle_t; //A ultrasonic_handle stucture is required for each ultrasonic module.
+typedef struct
+{
+    echo_status_t echo_state;
+    uint8_t ultrasonic_ready;
+    TIM_HandleTypeDef *htim_echo;
+    uint32_t echo_channel;
+    TIM_HandleTypeDef *htim_trig;
+    uint32_t trig_channel;
+    uint16_t t_rise;
+    uint16_t t_fall;
+} ultrasonic_Handle_t; // A ultrasonic_handle structure is required for each ultrasonic module.
 
-
-void Ultrasonic_Sensor_Init(ultrasonic_Handle_t* ultrasonic_sensor);//Initialize the ultrasonic sensor.
-ultrasonic_status_t Ultrasonic_Trigger(ultrasonic_Handle_t* ultrasonic_sensor);//Send a trigger signal to the ultrasonic TRIG.
-uint8_t Ultrasonic_IsReady(ultrasonic_Handle_t* ultrasonic_sensor);//Check if the board has successfully captured the duration during which the ECHO went HIGH.
-float Ultrasonic_GetDistance(ultrasonic_Handle_t* ultrasonic_sensor);//Returns measured distance in cm.
-
+void Ultrasonic_Sensor_Init(ultrasonic_Handle_t *ultrasonic_sensor);      // Initialize the ultrasonic sensor.
+ultrasonic_status_t Ultrasonic_Trigger(ultrasonic_Handle_t *ultrasonic_sensor); // Send a trigger signal to the ultrasonic TRIG.
+uint8_t Ultrasonic_IsReady(ultrasonic_Handle_t *ultrasonic_sensor);            // Check if the board has successfully captured the duration during which the ECHO went HIGH.
+float Ultrasonic_GetDistance(ultrasonic_Handle_t *ultrasonic_sensor);         // Returns measured distance in cm.
 
 #endif

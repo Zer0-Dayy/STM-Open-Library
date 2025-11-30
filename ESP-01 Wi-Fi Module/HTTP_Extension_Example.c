@@ -5,14 +5,14 @@ int main(void)
 {
     HAL_Init();
     SystemClock_Config();
-    MX_USART1_UART_Init();    //USART CONNECTED TO ESP-01
-    MX_USART3_UART_Init();    //SERIAL TERMINAL FOR LOGS
+    MX_USART1_UART_Init();    // USART CONNECTED TO ESP-01
+    MX_USART3_UART_Init();    // SERIAL TERMINAL FOR LOGS
 
-    WiFi_Init(&huart1);    //INITIALIZE WI-FI MODULE
-    WiFi_Connect("MySSID", "MyPassword"); //CONNECT TO WIFI
+    WiFi_Init(&huart1);       // INITIALIZE WI-FI MODULE
+    WiFi_Connect("MySSID", "MyPassword"); // CONNECT TO WIFI
 
     char ip[64];
-    WiFi_GetIP(ip, sizeof(ip));    //FETCH THE IP ADDRESS
+    WiFi_GetIP(ip, sizeof(ip));    // FETCH THE IP ADDRESS
     printf("IP: %s\r\n", ip);
 
     WiFi_SendTCP("192.168.1.105", 5000, "Hello from STM32!\r\n");
