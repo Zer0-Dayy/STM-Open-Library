@@ -71,17 +71,20 @@ int main(void)
         HAL_Delay(1);
     }
 }
-```
 
-## Timer ISR hook (required)
+
+// Timer ISR hook (required)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     Stepper28BYJ_HandleTimerInterrupt(htim);
 }
 
-Tips for beginners
+```
+
+## Tips for beginners
 The driver is timer-interrupt based: if the timer interrupt isn’t firing, the motor won’t move.
 Stepper28BYJ_Move() is non-blocking. It schedules steps; the ISR performs the stepping.
 Stepper28BYJ_SetSpeedPreset() changes the shared timer speed, so it affects both motors and must be called only when both motors are idle.
 
 If your motor vibrates or moves incorrectly, double-check the coil order (IN1–IN4) wiring to match the driver’s sequence.
+
