@@ -10,14 +10,16 @@ typedef struct
     uint16_t stepsRemaining;
 } Stepper28BYJ_Context;
 
+#define STEPPER28BYJ_SEQUENCE_LENGTH (8U)
+
 static Stepper28BYJ_Context stepperCtx[STEPPER28BYJ_MOTOR_MAX] = {0};
 static TIM_HandleTypeDef *sharedTimer = NULL;
-static const uint8_t halfStepSequence[8] = {
+static const uint8_t halfStepSequence[STEPPER28BYJ_SEQUENCE_LENGTH] = {
     0b0001U, 0b0011U, 0b0010U, 0b0110U,
     0b0100U, 0b1100U, 0b1000U, 0b1001U
 };
 
-/* helper that applies the 4-bit pattern to whichever GPIO pins belong to that motor. */
+// Helper that applies the 4-bit pattern to the four GPIO pins belonging to a motor.
 static void Stepper28BYJ_WriteOutputs(const Stepper28BYJ_Context *ctx, uint8_t pattern)
 {
     HAL_GPIO_WritePin(ctx->port[0], ctx->pin[0], (pattern & 0b0001U) ? GPIO_PIN_SET : GPIO_PIN_RESET);
@@ -38,7 +40,7 @@ static uint8_t Stepper28BYJ_AnyBusy(void)
     return 0U;
 }
 
-/* registers one motor (stores its GPIO pins, resets its state, ensures both motors share the same timer). */
+// Registers one motor (stores its GPIO pins, resets its state, ensures both motors share the same timer).
 HAL_StatusTypeDef Stepper28BYJ_Init(Stepper28BYJ_Motor motor,
                                     TIM_HandleTypeDef *timer,
                                     GPIO_TypeDef *portCoil1, uint16_t pinCoil1,
@@ -78,7 +80,7 @@ HAL_StatusTypeDef Stepper28BYJ_Init(Stepper28BYJ_Motor motor,
     return HAL_OK;
 }
 
-/* schedules a move for that motor by loading steps/direction and starting timer interrupts if needed. */
+// Schedules a move for that motor by loading steps/direction and starting timer interrupts if needed.
 HAL_StatusTypeDef Stepper28BYJ_Move(Stepper28BYJ_Motor motor, uint16_t steps, int8_t direction)
 {
     if (motor >= STEPPER28BYJ_MOTOR_MAX || sharedTimer == NULL || steps == 0U)
@@ -95,13 +97,13 @@ HAL_StatusTypeDef Stepper28BYJ_Move(Stepper28BYJ_Motor motor, uint16_t steps, in
     ctx->direction = (direction >= 0) ? STEPPER28BYJ_DIR_FORWARD : STEPPER28BYJ_DIR_REVERSE;
     ctx->stepsRemaining = steps;
 
-    /* If the shared timer is already running (other motor started it), HAL may return HAL_BUSY.
-       That is not a failure for this driver, because the move is already scheduled above. */
+    // If the shared timer is already running (other motor started it), HAL may return HAL_BUSY.
+    // That is not a failure for this driver, because the move is already scheduled above.
     HAL_StatusTypeDef st = HAL_TIM_Base_Start_IT(sharedTimer);
     return (st == HAL_BUSY) ? HAL_OK : st;
 }
 
-/* halts a specific motor, de‑energises its coils, and stops timer once no motors remain active. */
+// Halts a specific motor, de‑energises its coils, and stops timer once no motors remain active.
 HAL_StatusTypeDef Stepper28BYJ_Stop(Stepper28BYJ_Motor motor)
 {
     if (motor >= STEPPER28BYJ_MOTOR_MAX)
@@ -126,7 +128,7 @@ HAL_StatusTypeDef Stepper28BYJ_Stop(Stepper28BYJ_Motor motor)
     return HAL_OK;
 }
 
-/* returns 1 if the selected motor still has steps to execute, otherwise 0. */
+// Returns 1 if the selected motor still has steps to execute, otherwise 0.
 uint8_t Stepper28BYJ_IsBusy(Stepper28BYJ_Motor motor)
 {
     if (motor >= STEPPER28BYJ_MOTOR_MAX)
@@ -136,7 +138,7 @@ uint8_t Stepper28BYJ_IsBusy(Stepper28BYJ_Motor motor)
     return (stepperCtx[motor].stepsRemaining > 0U) ? 1U : 0U;
 }
 
-/* reprograms shared timer prescaler/period to LOW/MEDIUM/HIGH, only when both motors are idle. */
+// Reprograms shared timer prescaler/period to LOW/MEDIUM/HIGH, only when both motors are idle.
 HAL_StatusTypeDef Stepper28BYJ_SetSpeedPreset(Stepper28BYJ_Speed preset)
 {
     if (sharedTimer == NULL)
@@ -169,7 +171,7 @@ HAL_StatusTypeDef Stepper28BYJ_SetSpeedPreset(Stepper28BYJ_Speed preset)
     return HAL_TIM_Base_Init(sharedTimer);
 }
 
-/* ISR entry: on each timer overflow it advances every active motor’s half-step pattern, updates stepsRemaining, and disables timer when all moves finish. */
+// ISR entry: on each timer overflow it advances active motors, updates stepsRemaining, and disables the timer when all moves finish.
 void Stepper28BYJ_HandleTimerInterrupt(TIM_HandleTypeDef *htim)
 {
     if ((sharedTimer == NULL) || (htim->Instance != sharedTimer->Instance))
@@ -192,9 +194,9 @@ void Stepper28BYJ_HandleTimerInterrupt(TIM_HandleTypeDef *htim)
         int8_t newIndex = (int8_t)ctx->stepIndex + ctx->direction;
         if (newIndex < 0)
         {
-            newIndex = 7;
+            newIndex = (int8_t)(STEPPER28BYJ_SEQUENCE_LENGTH - 1U);
         }
-        else if (newIndex > 7)
+        else if (newIndex >= (int8_t)STEPPER28BYJ_SEQUENCE_LENGTH)
         {
             newIndex = 0;
         }

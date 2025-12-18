@@ -18,6 +18,7 @@ The goal is to create a clean, accessible reference for embedded engineers and s
 | HC-SR04 And HY-SRF05 Ultrasonic Sensors| Hardware-timer-based distance driver with PWM trigger and input capture. |
 | BME-280 Environmental Sensor | Forced-mode Bosch BME280 environmental driver with calibration and compensation helpers. |
 | MQ-2 Gas Sensor | Blocking MQ-2 helper that averages ADC samples and reports Rs/R0 after clean-air calibration. |
+| 28BYJ-48 Stepper Motor and ULN2003 Driver | Timer-interrupt-based dual 28BYJ-48 stepper driver with 8-step half-step sequencing. |
 
 ---
 
