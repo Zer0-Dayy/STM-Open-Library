@@ -1,7 +1,7 @@
 #include "bme280_sensor_driver.h"
 #include <string.h>
 
-// Register addresses from the BME280 datasheet
+// Register addresses from the BME280 datasheet.
 #define BME280_REG_ID        0xD0U
 #define BME280_REG_RESET     0xE0U
 #define BME280_REG_CTRL_HUM  0xF2U
@@ -57,7 +57,7 @@ bme280_status_t BME280_Sensor_Begin(bme280_sensor_t *sensor)
         return BME280_ERROR;
     }
 
-    // Soft reset to ensure a known state
+    // Soft reset to ensure a known state.
     if (bme280_write8(sensor, BME280_REG_RESET, BME280_RESET_VALUE) != BME280_OK)
     {
         return BME280_ERROR;
@@ -69,7 +69,7 @@ bme280_status_t BME280_Sensor_Begin(bme280_sensor_t *sensor)
         return BME280_ERROR;
     }
 
-    // Configure filters/standby (off), humidity oversampling (must be written before ctrl_meas)
+    // Configure filters/standby (off), humidity oversampling (must be written before ctrl_meas).
     if (bme280_write8(sensor, BME280_REG_CONFIG, BME280_CONFIG_VAL) != BME280_OK)
     {
         return BME280_ERROR;
@@ -115,7 +115,7 @@ bme280_status_t BME280_Sensor_Read(bme280_sensor_t *sensor, bme280_reading_t *re
         return BME280_TIMEOUT;
     }
 
-    // Read pressure (3 bytes), temperature (3 bytes), humidity (2 bytes) in one burst
+    // Read pressure (3 bytes), temperature (3 bytes), humidity (2 bytes) in one burst.
     uint8_t raw[8] = {0};
     if (bme280_read_block(sensor, BME280_REG_PRESS_MSB, raw, sizeof(raw)) != BME280_OK)
     {

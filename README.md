@@ -16,12 +16,17 @@ The goal is to create a clean, accessible reference for embedded engineers and s
 |---------|-------------|
 | ESP-01 Wi-Fi Module| Interrupt-driven ESP8266/ESP-01 Wi-Fi interface using HAL UART. |
 | HC-SR04 And HY-SRF05 Ultrasonic Sensors| Hardware-timer-based distance driver with PWM trigger and input capture. |
+| BME-280 Environmental Sensor | Forced-mode Bosch BME280 environmental driver with calibration and compensation helpers. |
+| MQ-2 Gas Sensor | Blocking MQ-2 helper that averages ADC samples and reports Rs/R0 after clean-air calibration. |
 
 ---
+
+## How to use the drivers
+- Each module folder contains the driver header/implementation, an `Example.c` snippet, and a module-level README.
+- Copy the files for the module you need into your STM32 project, wire the HAL handle references in the example, and follow the README for configuration notes.
 
 ## 🧾 License
 All modules are released under the **MIT License**.  
 Contributions are welcome — submit a pull request with a short description of your module or enhancement.
 
 ---
-
