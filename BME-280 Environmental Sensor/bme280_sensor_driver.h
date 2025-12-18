@@ -4,8 +4,8 @@
 #include "main.h"
 #include <stdint.h>
 
-// The breakout typically uses SDO pulled low -> 0x76. If SDO high, use HIGH.
-#define BME280_I2C_ADDR_LOW  (0x76U << 1) // Shifted for HAL 8-bit addressing
+// The breakout typically uses SDO pulled low -> 0x76. If SDO is pulled high, use HIGH.
+#define BME280_I2C_ADDR_LOW  (0x76U << 1) // Shifted for HAL 8-bit addressing.
 #define BME280_I2C_ADDR_HIGH (0x77U << 1)
 
 typedef enum
@@ -15,12 +15,7 @@ typedef enum
     BME280_TIMEOUT
 } bme280_status_t;
 
-
-// Calibration constants 
-// The sensor stores these coefficients so your driver can use them to convert raw temperature/pressure/humidity readings into real-world values.
-// They’re read off the chip itself. 
-// During BME280_Sensor_Begin the driver calls bme280_read_calibration (in Temperature-Sensor-Updated/BME-280/Core/Src/bme280_sensor_driver.c), which reads the factory-trimmed calibration registers over I²C: block 0x88–0xA1 for temp/pressure and 0xE1–0xE7 for humidity. 
-// Those registers are in the Bosch datasheet.
+// Calibration constants read from the device to convert raw counts to compensated values.
 typedef struct
 {
     uint16_t dig_T1;
@@ -49,14 +44,14 @@ typedef struct
     I2C_HandleTypeDef *hi2c;
     uint8_t i2c_address;
     bme280_calibration_t calib;
-    int32_t t_fine; // Shared temp compensation term reused by pressure/humidity
+    int32_t t_fine; // Shared temp compensation term reused by pressure/humidity.
 } bme280_sensor_t;
 
 typedef struct
 {
-    float temperature_c; // Degrees Celsius
-    float humidity_rh;   // % relative humidity (0-100)
-    float pressure_pa;   // Pascals
+    float temperature_c; // Degrees Celsius.
+    float humidity_rh;   // % relative humidity (0-100).
+    float pressure_pa;   // Pascals.
 } bme280_reading_t;
 
 // Bind the HAL I2C handle and I2C address (0x76 or 0x77). Does not talk to hardware yet.
